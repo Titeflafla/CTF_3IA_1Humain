@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit Labyrinthe - Recherche Bidirectionnelle</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Cyberpunk / Tech Aesthetics -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#070a12',
+                            panel: '#0f1626',
+                            border: '#1f2d47',
+                            cyan: '#00f3ff',
+                            magenta: '#ff0055',
+                            yellow: '#ffe600',
+                            green: '#00ffaa'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #070a12;
+            color: #e2e8f0;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Neon Glow Effects */
+        .glow-cyan {
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.7), 0 0 15px rgba(0, 243, 255, 0.4);
+        }
+        .glow-magenta {
+            text-shadow: 0 0 8px rgba(255, 0, 85, 0.7), 0 0 15px rgba(255, 0, 85, 0.4);
+        }
+        .glow-yellow {
+            text-shadow: 0 0 8px rgba(255, 230, 0, 0.8), 0 0 15px rgba(255, 230, 0, 0.5);
+        }
+        .box-glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.25), inset 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+        .box-glow-yellow {
+            box-shadow: 0 0 20px rgba(255, 230, 0, 0.4), inset 0 0 10px rgba(255, 230, 0, 0.2);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1626;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2d47;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f3ff;
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            accent-color: #00f3ff;
+        }
+
+        canvas {
+            touch-action: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyber-cyan selection:text-black">
+
+    <!-- Header -->
+    <header class="border-b border-cyber-border bg-cyber-panel/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-cyber-cyan/10 border border-cyber-cyan flex items-center justify-center shadow-[0_0_12px_rgba(0,243,255,0.3)]">
+                    <i class="fa-solid fa-bolt text-cyber-cyan text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-extrabold text-xl md:text-2xl tracking-wider text-white flex items-center gap-2">
+                        CIRCUIT <span class="text-cyber-cyan glow-cyan">BIDIRECTIONNEL</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Simulation d'amorçage électrique & fermeture de boucle</p>
+                </div>
+            </div>
+
+            <!-- Status Indicator Badge -->
+            <div id="statusBadge" class="flex items-center gap-3 px-4 py-1.5 rounded-full border border-cyber-border bg-cyber-bg/80 text-sm font-orbitron">
+                <span id="statusDot" class="w-3 h-3 rounded-full bg-slate-500"></span>
+                <span id="statusText" class="text-slate-300 font-semibold uppercase tracking-wide">En attente</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full flex flex-col lg:flex-row gap-6">
+
+        <!-- Controls Sidebar -->
+        <aside class="w-full lg:w-80 flex flex-col gap-5 shrink-0">
+            
+            <!-- Execution Controls Panel -->
+            <div class="bg-cyber-panel border border-cyber-border rounded-xl p-5 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-24 h-24 bg-cyber-cyan/5 rounded-full blur-xl pointer-events-none"></div>
+                <h2 class="font-orbitron text-sm font-bold tracking-widest uppercase text-cyber-cyan mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Contrôles Simulation
+                </h2>
+
+                <div class="space-y-4">
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btnStart" class="col-span-2 py-3 px-4 rounded-lg bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan font-orbitron font-bold tracking-wider hover:bg-cyber-cyan hover:text-black transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_0_10px_rgba(0,243,255,0.2)]">
+                            <i class="fa-solid fa-play"></i> IMPULSION (+) / (-)
+                        </button>
+                        <button id="btnPause" disabled class="py-2.5 px-3 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-400 font-orbitron text-sm font-semibold hover:bg-amber-500 hover:text-black transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-pause"></i> PAUSE
+                        </button>
+                        <button id="btnReset" class="py-2.5 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-orbitron text-sm font-semibold hover:bg-slate-700 hover:text-white transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left"></i> RAZ
+                        </button>
+                    </div>
+
+                    <!-- Speed Slider -->
+                    <div class="space-y-1.5 pt-2">
+                        <div class="flex justify-between text-xs font-semibold text-slate-400">
+                            <span>Vitesse de propagation</span>
+                            <span id="speedValue" class="text-cyber-cyan font-mono">50 ms</span>
+                        </div>
+                        <input type="range" id="speedSlider" min="5" max="150" value="50" step="5" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Audio Toggle -->
+                    <div class="flex items-center justify-between pt-2 border-t border-cyber-border">
+                        <span class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                            <i class="fa-solid fa-volume-high text-slate-400"></i> Effets Sonores
+                        </span>
+                        <button id="btnAudio" class="w-12 h-6 bg-cyber-cyan/20 border border-cyber-cyan rounded-full p-0.5 transition-colors duration-200 relative">
+                            <div id="audioToggleKnob" class="w-4 h-4 bg-cyber-cyan rounded-full transition-transform transform translate-x-6"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid & Labyrinth Controls -->
+            <div class="bg-cyber-panel border border-cyber-border rounded-xl p-5 shadow-lg">
+                <h2 class="font-orbitron text-sm font-bold tracking-widest uppercase text-cyber-cyan mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-map"></i> Labyrinthe & Grille
+                </h2>
+
+                <div class="space-y-3">
+                    <button id="btnGenMaze" class="w-full py-2.5 px-4 rounded-lg bg-indigo-600/20 border border-indigo-500/50 text-indigo-300 font-orbitron text-sm font-semibold hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-network-wired"></i> Générer Labyrinthe DFS
+                    </button>
+                    <button id="btnClearWalls" class="w-full py-2.5 px-4 rounded-lg bg-rose-600/10 border border-rose-500/30 text-rose-400 font-orbitron text-sm font-semibold hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i> Effacer Murs
+                    </button>
+                    
+                    <!-- Tool Selection Mode -->
+                    <div class="pt-3 border-t border-cyber-border">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Mode D'Édition Manuelle</label>
+                        <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+                            <button data-tool="wall" class="tool-btn active p-2 rounded border border-cyber-cyan bg-cyber-cyan/20 text-cyber-cyan flex items-center gap-1.5 justify-center">
+                                <i class="fa-solid fa-square"></i> Poser Mur
+                            </button>
+                            <button data-tool="erase" class="tool-btn p-2 rounded border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-500 flex items-center gap-1.5 justify-center">
+                                <i class="fa-solid fa-eraser"></i> Effacer
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-2 italic">
+                            <i class="fa-solid fa-circle-info"></i> Glissez les icônes <strong class="text-cyber-cyan">(+)</strong> ou <strong class="text-cyber-magenta">(-)</strong> sur la grille pour les déplacer.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Panel -->
+            <div class="bg-cyber-panel border border-cyber-border rounded-xl p-5 shadow-lg">
+                <h2 class="font-orbitron text-sm font-bold tracking-widest uppercase text-cyber-cyan mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-simple"></i> Statistiques du Flux
+                </h2>
+
+                <div class="grid grid-cols-2 gap-3 text-center">
+                    <div class="bg-cyber-bg/80 border border-cyber-cyan/30 rounded-lg p-3">
+                        <div class="text-xs text-cyber-cyan font-bold uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-cyber-cyan"></span> Pôle (+) Cyan
+                        </div>
+                        <span id="statVisitedStart" class="font-orbitron text-2xl font-black text-white">0</span>
+                        <span class="text-[10px] text-slate-400 block mt-0.5">cases explorées</span>
+                    </div>
+
+                    <div class="bg-cyber-bg/80 border border-cyber-magenta/30 rounded-lg p-3">
+                        <div class="text-xs text-cyber-magenta font-bold uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-cyber-magenta"></span> Pôle (-) Magenta
+                        </div>
+                        <span id="statVisitedEnd" class="font-orbitron text-2xl font-black text-white">0</span>
+                        <span class="text-[10px] text-slate-400 block mt-0.5">cases explorées</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 bg-cyber-bg/80 border border-cyber-border rounded-lg p-2.5 flex justify-between items-center text-xs">
+                    <span class="text-slate-400 font-medium">Longueur du Circuit :</span>
+                    <span id="statPathLength" class="font-orbitron font-bold text-cyber-yellow glow-yellow text-sm">--</span>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Canvas Visualizer Section -->
+        <section class="flex-grow flex flex-col bg-cyber-panel border border-cyber-border rounded-xl p-4 shadow-2xl relative min-h-[500px]">
+            <!-- Legend bar above canvas -->
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3 text-xs font-semibold px-2">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <span class="flex items-center gap-1.5 text-cyber-cyan"><span class="w-3 h-3 rounded-sm bg-cyber-cyan/80 shadow-[0_0_8px_#00f3ff]"></span> Pôle (+) Source</span>
+                    <span class="flex items-center gap-1.5 text-cyber-magenta"><span class="w-3 h-3 rounded-sm bg-cyber-magenta/80 shadow-[0_0_8px_#ff0055]"></span> Pôle (-) Puits</span>
+                    <span class="flex items-center gap-1.5 text-cyber-yellow"><span class="w-3 h-3 rounded-sm bg-cyber-yellow shadow-[0_0_10px_#ffe600]"></span> Circuit Fermé</span>
+                    <span class="flex items-center gap-1.5 text-slate-400"><span class="w-3 h-3 rounded-sm bg-slate-700"></span> Obstacle/Mur</span>
+                </div>
+                <div class="text-slate-400 font-mono text-[11px] hidden sm:block">
+                    [Recherche Bidirectionnelle BFS]
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div id="canvasWrapper" class="relative flex-grow w-full h-full min-h-[420px] rounded-lg overflow-hidden border border-cyber-border/80 bg-[#070a12] flex items-center justify-center">
+                <canvas id="gridCanvas" class="cursor-crosshair"></canvas>
+
+                <!-- Floating Overlay Banner for Circuit Closed / No Path -->
+                <div id="alertBanner" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 z-20">
+                    <div id="alertBox" class="p-6 rounded-2xl border bg-cyber-panel text-center transform scale-90 transition-transform duration-300 max-w-sm">
+                        <div id="alertIcon" class="text-4xl mb-2"></div>
+                        <h3 id="alertTitle" class="font-orbitron text-xl font-extrabold tracking-wider mb-1"></h3>
+                        <p id="alertSub" class="text-xs text-slate-300 mb-4"></p>
+                        <button id="btnBannerDismiss" class="py-2 px-6 rounded-lg bg-cyber-cyan text-black font-orbitron font-bold text-xs uppercase tracking-wider hover:bg-white transition-all">
+                            Continuer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-cyber-border bg-cyber-panel/40 py-3 mt-4 text-center text-xs text-slate-500">
+        <p>Lois de Kirchhoff & Recherche Bidirectionnelle (BFS) &bull; Visualisation Interactive HTML5 Canvas</p>
+    </footer>
+
+    <script>
+        // Configuration Grid Constants
+        const CELL_SIZE = 24; // Base size in pixels
+        const WALL = 1;
+        const EMPTY = 0;
+
+        // Colors Palette for Canvas
+        const COLORS = {
+            bg: '#070a12',
+            gridLine: '#131b2e',
+            wall: '#1e293b',
+            wallBorder: '#334155',
+            start: '#00f3ff',
+            end: '#ff0055',
+            visitedStart: 'rgba(0, 243, 255, 0.22)',
+            visitedStartBorder: 'rgba(0, 243, 255, 0.5)',
+            visitedEnd: 'rgba(255, 0, 85, 0.22)',
+            visitedEndBorder: 'rgba(255, 0, 85, 0.5)',
+            frontStart: '#00f3ff',
+            frontEnd: '#ff0055',
+            pathGlow: '#ffe600',
+            pathCore: '#ffffff'
+        };
+
+        // Application State
+        let cols = 0;
+        let rows = 0;
+        let grid = [];
+        
+        // Pointers
+        let startPos = { r: 5, c: 5 };
+        let endPos = { r: 15, c: 25 };
+
+        // Search Queues and Visited Maps (Key: "r,c")
+        let queueStart = [];
+        let queueEnd = [];
+        let parentStart = new Map(); // key -> parentKey
+        let parentEnd = new Map();   // key -> parentKey
+        let path = [];
+        let meetingPoint = null;
+
+        // Animation & Status
+        let isRunning = false;
+        let isPaused = false;
+        let isFinished = false;
+        let animationTimer = null;
+        let speedMs = 50;
+        let currentTool = 'wall'; // 'wall', 'erase'
+        let audioEnabled = true;
+
+        // Canvas & Context
+        const canvas = document.getElementById('gridCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+
+        // Dragging Node State
+        let isDraggingStart = false;
+        let isDraggingEnd = false;
+        let isDrawingWalls = false;
+        let drawMode = WALL;
+
+        class CyberAudio {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playStepSound(isStartQueue) {
+                if (!audioEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'sine';
+                    // Cyan has higher pitch, Magenta slightly lower
+                    osc.frequency.setValueAtTime(isStartQueue ? 520 : 380, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(isStartQueue ? 260 : 190, this.ctx.currentTime + 0.04);
+
+                    gain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.04);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.04);
+                } catch (e) {
+                    // Audio context errors handled silently
+                }
+            }
+
+            playConnectionZap() {
+                if (!audioEnabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                try {
+                    const now = this.ctx.currentTime;
+                    
+                    // Arc / Zap Synthesizer sound
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                    osc.frequency.exponentialRampToValueAtTime(440, now + 0.4);
+
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.45);
+                } catch(e) {}
+            }
+        }
+
+        const audio = new CyberAudio();
+
+        function initGridSize() {
+            const width = canvasWrapper.clientWidth;
+            const height = canvasWrapper.clientHeight;
+
+            // Compute columns and rows based on container size
+            cols = Math.floor(width / CELL_SIZE);
+            rows = Math.floor(height / CELL_SIZE);
+
+            // Ensure bounds
+            cols = Math.max(12, cols);
+            rows = Math.max(10, rows);
+
+            // Set high DPI canvas resolution
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = cols * CELL_SIZE * dpr;
+            canvas.height = rows * CELL_SIZE * dpr;
+            canvas.style.width = `${cols * CELL_SIZE}px`;
+            canvas.style.height = `${rows * CELL_SIZE}px`;
+
+            ctx.scale(dpr, dpr);
+
+            // Re-initialize grid array
+            grid = Array.from({ length: rows }, () => Array(cols).fill(EMPTY));
+
+            // Set default start (+) and end (-) positions
+            startPos = { r: Math.floor(rows / 2), c: Math.floor(cols / 4) };
+            endPos = { r: Math.floor(rows / 2), c: Math.floor((cols / 4) * 3) };
+
+            resetSimulationState();
+            draw();
+        }
+
+        function posToKey(r, c) {
+            return `${r},${c}`;
+        }
+
+        function keyToPos(key) {
+            const [r, c] = key.split(',').map(Number);
+            return { r, c };
+        }
+
+        function generateDFSMaze() {
+            resetSimulationState();
+            
+            // Fill all with walls
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    grid[r][c] = WALL;
+                }
+            }
+
+            const stack = [];
+            const startR = 1;
+            const startC = 1;
+            grid[startR][startC] = EMPTY;
+            stack.push({ r: startR, c: startC });
+
+            while (stack.length > 0) {
+                const current = stack[stack.length - 1];
+                const neighbors = [];
+
+                const dirs = [
+                    { dr: -2, dc: 0 },
+                    { dr: 2, dc: 0 },
+                    { dr: 0, dc: -2 },
+                    { dr: 0, dc: 2 }
+                ];
+
+                for (const d of dirs) {
+                    const nr = current.r + d.dr;
+                    const nc = current.c + d.dc;
+
+                    if (nr > 0 && nr < rows - 1 && nc > 0 && nc < cols - 1 && grid[nr][nc] === WALL) {
+                        neighbors.push({ r: nr, c: nc, dr: d.dr, dc: d.dc });
+                    }
+                }
+
+                if (neighbors.length > 0) {
+                    // Pick random unvisited neighbor
+                    const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    grid[current.r + next.dr / 2][current.c + next.dc / 2] = EMPTY;
+                    grid[next.r][next.c] = EMPTY;
+                    stack.push({ r: next.r, c: next.c });
+                } else {
+                    stack.pop();
+                }
+            }
+
+            // Ensure start and end positions are empty passages
+            grid[startPos.r][startPos.c] = EMPTY;
+            grid[endPos.r][endPos.c] = EMPTY;
+
+            // Clear area around start and end for smooth playability
+            clearSurrounding(startPos.r, startPos.c);
+            clearSurrounding(endPos.r, endPos.c);
+
+            draw();
+        }
+
+        function clearSurrounding(r, c) {
+            const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+            dirs.forEach(([dr, dc]) => {
+                const nr = r + dr, nc = c + dc;
+                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                    grid[nr][nc] = EMPTY;
+                }
+            });
+        }
+
+        function clearWalls() {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    grid[r][c] = EMPTY;
+                }
+            }
+            resetSimulationState();
+            draw();
+        }
+
+        function resetSimulationState() {
+            stopSimulation();
+            queueStart = [{ ...startPos }];
+            queueEnd = [{ ...endPos }];
+
+            parentStart = new Map([[posToKey(startPos.r, startPos.c), null]]);
+            parentEnd = new Map([[posToKey(endPos.r, endPos.c), null]]);
+
+            path = [];
+            meetingPoint = null;
+            isFinished = false;
+            isPaused = false;
+
+            updateUI();
+            draw();
+        }
+
+        function startSimulation() {
+            if (isFinished) {
+                resetSimulationState();
+            }
+            isRunning = true;
+            isPaused = false;
+            updateUI();
+            audio.init();
+
+            runSearchStep();
+        }
+
+        function pauseSimulation() {
+            isRunning = false;
+            isPaused = true;
+            if (animationTimer) clearTimeout(animationTimer);
+            updateUI();
+        }
+
+        function stopSimulation() {
+            isRunning = false;
+            isPaused = false;
+            if (animationTimer) clearTimeout(animationTimer);
+            updateUI();
+        }
+
+        function runSearchStep() {
+            if (!isRunning) return;
+
+            // Check if both queues are empty -> No Path
+            if (queueStart.length === 0 && queueEnd.length === 0) {
+                isRunning = false;
+                isFinished = true;
+                updateStatus('no_path');
+                draw();
+                return;
+            }
+
+            let foundConnection = false;
+
+            // 1. Expand layer from Start (+ Pôle Cyan)
+            if (queueStart.length > 0) {
+                foundConnection = expandFrontier(queueStart, parentStart, parentEnd, true);
+                audio.playStepSound(true);
+            }
+
+            // 2. Expand layer from End (- Pôle Magenta) if not yet connected
+            if (!foundConnection && queueEnd.length > 0) {
+                foundConnection = expandFrontier(queueEnd, parentEnd, parentStart, false);
+                audio.playStepSound(false);
+            }
+
+            draw();
+            updateStats();
+
+            if (foundConnection) {
+                isRunning = false;
+                isFinished = true;
+                audio.playConnectionZap();
+                reconstructPath();
+                updateStatus('connected');
+                draw();
+                return;
+            }
+
+            // Schedule next step
+            animationTimer = setTimeout(runSearchStep, speedMs);
+        }
+
+        function expandFrontier(queue, myParents, opponentParents, isStart) {
+            const countAtCurrentLevel = queue.length;
+
+            for (let i = 0; i < countAtCurrentLevel; i++) {
+                const current = queue.shift();
+                const currKey = posToKey(current.r, current.c);
+
+                const neighbors = [
+                    { r: current.r - 1, c: current.c },
+                    { r: current.r + 1, c: current.c },
+                    { r: current.r, c: current.c - 1 },
+                    { r: current.r, c: current.c + 1 }
+                ];
+
+                for (const neighbor of neighbors) {
+                    const { r, c } = neighbor;
+                    if (r < 0 || r >= rows || c < 0 || c >= cols) continue;
+                    if (grid[r][c] === WALL) continue;
+
+                    const nKey = posToKey(r, c);
+
+                    // Check if opponent already reached this cell -> CIRCUIT CLOSED!
+                    if (opponentParents.has(nKey)) {
+                        myParents.set(nKey, currKey);
+                        meetingPoint = { r, c };
+                        return true;
+                    }
+
+                    // Visit cell if not visited by own queue yet
+                    if (!myParents.has(nKey)) {
+                        myParents.set(nKey, currKey);
+                        queue.push({ r, c });
+                    }
+                }
+            }
+            return false;
+        }
+
+        function reconstructPath() {
+            if (!meetingPoint) return;
+            const meetKey = posToKey(meetingPoint.r, meetingPoint.c);
+
+            // Reconstruct path back to start (+)
+            const startPath = [];
+            let curr = meetKey;
+            while (curr !== null) {
+                startPath.push(keyToPos(curr));
+                curr = parentStart.get(curr);
+            }
+            startPath.reverse();
+
+            // Reconstruct path back to end (-)
+            const endPath = [];
+            curr = parentEnd.get(meetKey);
+            while (curr !== null && curr !== undefined) {
+                endPath.push(keyToPos(curr));
+                curr = parentEnd.get(curr);
+            }
+
+            path = [...startPath, ...endPath];
+            document.getElementById('statPathLength').textContent = `${path.length} cases`;
+        }
+
+        let particleTime = 0;
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw Subtle Background Grid
+            ctx.strokeStyle = COLORS.gridLine;
+            ctx.lineWidth = 1;
+
+            for (let r = 0; r <= rows; r++) {
+                ctx.beginPath();
+                ctx.moveTo(0, r * CELL_SIZE);
+                ctx.lineTo(cols * CELL_SIZE, r * CELL_SIZE);
+                ctx.stroke();
+            }
+            for (let c = 0; c <= cols; c++) {
+                ctx.beginPath();
+                ctx.moveTo(c * CELL_SIZE, 0);
+                ctx.lineTo(c * CELL_SIZE, rows * CELL_SIZE);
+                ctx.stroke();
+            }
+
+            // 2. Draw Walls
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c] === WALL) {
+                        const x = c * CELL_SIZE;
+                        const y = r * CELL_SIZE;
+
+                        ctx.fillStyle = COLORS.wall;
+                        ctx.fillRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+
+                        ctx.strokeStyle = COLORS.wallBorder;
+                        ctx.strokeRect(x + 1.5, y + 1.5, CELL_SIZE - 3, CELL_SIZE - 3);
+                    }
+                }
+            }
+
+            // 3. Draw Visited Nodes (Cyan Start Wave Front)
+            for (const [key] of parentStart) {
+                const { r, c } = keyToPos(key);
+                if ((r === startPos.r && c === startPos.c) || (meetingPoint && r === meetingPoint.r && c === meetingPoint.c)) continue;
+
+                const x = c * CELL_SIZE;
+                const y = r * CELL_SIZE;
+
+                ctx.fillStyle = COLORS.visitedStart;
+                ctx.fillRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+
+                ctx.strokeStyle = COLORS.visitedStartBorder;
+                ctx.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+            }
+
+            // 4. Draw Visited Nodes (Magenta End Wave Front)
+            for (const [key] of parentEnd) {
+                const { r, c } = keyToPos(key);
+                if ((r === endPos.r && c === endPos.c) || (meetingPoint && r === meetingPoint.r && c === meetingPoint.c)) continue;
+
+                const x = c * CELL_SIZE;
+                const y = r * CELL_SIZE;
+
+                ctx.fillStyle = COLORS.visitedEnd;
+                ctx.fillRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+
+                ctx.strokeStyle = COLORS.visitedEndBorder;
+                ctx.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+            }
+
+            // 5. Highlight Active Queue Frontiers
+            queueStart.forEach(p => drawFrontierCell(p.r, p.c, COLORS.frontStart));
+            queueEnd.forEach(p => drawFrontierCell(p.r, p.c, COLORS.frontEnd));
+
+            // 6. Draw Closed Circuit Path with Electric Glow Effects
+            if (path.length > 0) {
+                drawElectricPath();
+            }
+
+            // 7. Draw Poles (+) and (-)
+            drawPole(startPos.r, startPos.c, '+', COLORS.start);
+            drawPole(endPos.r, endPos.c, '-', COLORS.end);
+        }
+
+        function drawFrontierCell(r, c, color) {
+            const x = c * CELL_SIZE;
+            const y = r * CELL_SIZE;
+
+            ctx.save();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = color;
+            ctx.fillRect(x + 3, y + 3, CELL_SIZE - 6, CELL_SIZE - 6);
+            ctx.restore();
+        }
+
+        function drawPole(r, c, symbol, color) {
+            const x = c * CELL_SIZE;
+            const y = r * CELL_SIZE;
+            const cx = x + CELL_SIZE / 2;
+            const cy = y + CELL_SIZE / 2;
+
+            ctx.save();
+            // Glow
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 15;
+
+            // Background circle
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(cx, cy, CELL_SIZE * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner dark center
+            ctx.fillStyle = '#070a12';
+            ctx.beginPath();
+            ctx.arc(cx, cy, CELL_SIZE * 0.28, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Symbol text (+ or -)
+            ctx.fillStyle = color;
+            ctx.font = `bold ${Math.floor(CELL_SIZE * 0.65)}px Orbitron, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(symbol, cx, cy + 1);
+
+            ctx.restore();
+        }
+
+        function drawElectricPath() {
+            particleTime += 0.08;
+
+            ctx.save();
+            ctx.shadowColor = COLORS.pathGlow;
+            ctx.shadowBlur = 18;
+            ctx.strokeStyle = COLORS.pathGlow;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            for (let i = 0; i < path.length; i++) {
+                const cx = path[i].c * CELL_SIZE + CELL_SIZE / 2;
+                const cy = path[i].r * CELL_SIZE + CELL_SIZE / 2;
+                if (i === 0) ctx.moveTo(cx, cy);
+                else ctx.lineTo(cx, cy);
+            }
+            ctx.stroke();
+
+            // White Inner Core Line
+            ctx.shadowBlur = 5;
+            ctx.strokeStyle = COLORS.pathCore;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Animated Electric Sparks along the circuit
+            if (path.length > 1) {
+                const totalPoints = path.length;
+                for (let i = 0; i < 3; i++) {
+                    const offset = (particleTime + i * (totalPoints / 3)) % totalPoints;
+                    const idx1 = Math.floor(offset);
+                    const idx2 = (idx1 + 1) % totalPoints;
+                    const progress = offset - idx1;
+
+                    if (path[idx1] && path[idx2]) {
+                        const px = (path[idx1].c + (path[idx2].c - path[idx1].c) * progress) * CELL_SIZE + CELL_SIZE / 2;
+                        const py = (path[idx1].r + (path[idx2].r - path[idx1].r) * progress) * CELL_SIZE + CELL_SIZE / 2;
+
+                        ctx.fillStyle = '#ffffff';
+                        ctx.shadowColor = '#ffffff';
+                        ctx.shadowBlur = 12;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            ctx.restore();
+
+            // Loop request animation frame for path spark animation
+            if (isFinished && path.length > 0) {
+                requestAnimationFrame(() => {
+                    if (isFinished) draw();
+                });
+            }
+        }
+
+        function getGridCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const c = Math.floor(x / CELL_SIZE);
+            const r = Math.floor(y / CELL_SIZE);
+
+            return {
+                r: Math.max(0, Math.min(rows - 1, r)),
+                c: Math.max(0, Math.min(cols - 1, c))
+            };
+        }
+
+        function handlePointerDown(e) {
+            if (isRunning) return;
+            const { r, c } = getGridCoordinates(e);
+
+            if (r === startPos.r && c === startPos.c) {
+                isDraggingStart = true;
+            } else if (r === endPos.r && c === endPos.c) {
+                isDraggingEnd = true;
+            } else {
+                isDrawingWalls = true;
+                drawMode = currentTool === 'wall' ? WALL : EMPTY;
+                grid[r][c] = drawMode;
+                resetSimulationState();
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (isRunning) return;
+            const { r, c } = getGridCoordinates(e);
+
+            if (isDraggingStart) {
+                if (grid[r][c] !== WALL && !(r === endPos.r && c === endPos.c)) {
+                    startPos = { r, c };
+                    resetSimulationState();
+                }
+            } else if (isDraggingEnd) {
+                if (grid[r][c] !== WALL && !(r === startPos.r && c === startPos.c)) {
+                    endPos = { r, c };
+                    resetSimulationState();
+                }
+            } else if (isDrawingWalls) {
+                if (!(r === startPos.r && c === startPos.c) && !(r === endPos.r && c === endPos.c)) {
+                    grid[r][c] = drawMode;
+                    resetSimulationState();
+                }
+            }
+        }
+
+        function handlePointerUp() {
+            isDraggingStart = false;
+            isDraggingEnd = false;
+            isDrawingWalls = false;
+        }
+
+        // Attach Canvas Interaction Listeners
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handlePointerDown(e); });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handlePointerMove(e); });
+        window.addEventListener('touchend', handlePointerUp);
+
+        function updateStats() {
+            document.getElementById('statVisitedStart').textContent = parentStart.size;
+            document.getElementById('statVisitedEnd').textContent = parentEnd.size;
+        }
+
+        function updateStatus(state) {
+            const badge = document.getElementById('statusBadge');
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+
+            if (state === 'running') {
+                dot.className = 'w-3 h-3 rounded-full bg-cyber-cyan animate-ping';
+                text.textContent = 'Propagation en cours...';
+                text.className = 'text-cyber-cyan font-bold tracking-wide';
+                hideAlertBanner();
+            } else if (state === 'paused') {
+                dot.className = 'w-3 h-3 rounded-full bg-amber-400';
+                text.textContent = 'En Pause';
+                text.className = 'text-amber-400 font-bold tracking-wide';
+            } else if (state === 'connected') {
+                dot.className = 'w-3 h-3 rounded-full bg-cyber-yellow shadow-[0_0_8px_#ffe600]';
+                text.textContent = 'CIRCUIT FERMÉ !';
+                text.className = 'text-cyber-yellow font-black glow-yellow tracking-wider';
+                showAlertBanner(
+                    '<i class="fa-solid fa-bolt text-cyber-yellow"></i>',
+                    'CIRCUIT FERMÉ !',
+                    `Le pôle (+) et le pôle (-) se sont rejoint en ${path.length} étapes !`,
+                    'border-cyber-yellow'
+                );
+            } else if (state === 'no_path') {
+                dot.className = 'w-3 h-3 rounded-full bg-rose-500';
+                text.textContent = 'Aucun Chemin';
+                text.className = 'text-rose-400 font-bold tracking-wide';
+                showAlertBanner(
+                    '<i class="fa-solid fa-triangle-exclamation text-rose-500"></i>',
+                    'CIRCUIT OUVERT',
+                    'Les obstacles empêchent le courant de boucler entre le pôle (+) et (-).',
+                    'border-rose-500'
+                );
+            } else {
+                dot.className = 'w-3 h-3 rounded-full bg-slate-500';
+                text.textContent = 'En attente';
+                text.className = 'text-slate-300 font-semibold tracking-wide';
+                hideAlertBanner();
+            }
+        }
+
+        function updateUI() {
+            const btnStart = document.getElementById('btnStart');
+            const btnPause = document.getElementById('btnPause');
+
+            if (isRunning) {
+                btnStart.disabled = true;
+                btnStart.classList.add('opacity-40', 'pointer-events-none');
+                btnPause.disabled = false;
+                updateStatus('running');
+            } else {
+                btnStart.disabled = false;
+                btnStart.classList.remove('opacity-40', 'pointer-events-none');
+                btnPause.disabled = true;
+                if (isPaused) {
+                    updateStatus('paused');
+                } else if (!isFinished) {
+                    updateStatus('idle');
+                }
+            }
+        }
+
+        function showAlertBanner(iconHtml, title, subText, borderColorClass) {
+            const banner = document.getElementById('alertBanner');
+            const alertBox = document.getElementById('alertBox');
+
+            document.getElementById('alertIcon').innerHTML = iconHtml;
+            document.getElementById('alertTitle').textContent = title;
+            document.getElementById('alertSub').textContent = subText;
+
+            alertBox.className = `p-6 rounded-2xl border ${borderColorClass} bg-cyber-panel text-center transform scale-100 transition-transform duration-300 max-w-sm shadow-2xl`;
+
+            banner.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function hideAlertBanner() {
+            const banner = document.getElementById('alertBanner');
+            banner.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        document.getElementById('btnStart').addEventListener('click', startSimulation);
+        document.getElementById('btnPause').addEventListener('click', pauseSimulation);
+        document.getElementById('btnReset').addEventListener('click', resetSimulationState);
+        document.getElementById('btnGenMaze').addEventListener('click', generateDFSMaze);
+        document.getElementById('btnClearWalls').addEventListener('click', clearWalls);
+        document.getElementById('btnBannerDismiss').addEventListener('click', hideAlertBanner);
+
+        // Speed Slider Listener
+        const speedSlider = document.getElementById('speedSlider');
+        speedSlider.addEventListener('input', (e) => {
+            // Slider value invert: higher slider = faster (lower ms delay)
+            const val = parseInt(e.target.value, 10);
+            speedMs = 155 - val;
+            document.getElementById('speedValue').textContent = `${speedMs} ms`;
+        });
+
+        // Audio Toggle Switch
+        const btnAudio = document.getElementById('btnAudio');
+        const audioKnob = document.getElementById('audioToggleKnob');
+        btnAudio.addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            if (audioEnabled) {
+                audioKnob.className = 'w-4 h-4 bg-cyber-cyan rounded-full transition-transform transform translate-x-6';
+                btnAudio.className = 'w-12 h-6 bg-cyber-cyan/20 border border-cyber-cyan rounded-full p-0.5 transition-colors duration-200 relative';
+            } else {
+                audioKnob.className = 'w-4 h-4 bg-slate-500 rounded-full transition-transform transform translate-x-0';
+                btnAudio.className = 'w-12 h-6 bg-slate-800 border border-slate-700 rounded-full p-0.5 transition-colors duration-200 relative';
+            }
+        });
+
+        // Tool Buttons (Wall vs Erase)
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => {
+                    b.classList.remove('active', 'border-cyber-cyan', 'bg-cyber-cyan/20', 'text-cyber-cyan');
+                    b.classList.add('border-slate-700', 'bg-slate-800', 'text-slate-400');
+                });
+                btn.classList.add('active', 'border-cyber-cyan', 'bg-cyber-cyan/20', 'text-cyber-cyan');
+                btn.classList.remove('border-slate-700', 'bg-slate-800', 'text-slate-400');
+                currentTool = btn.dataset.tool;
+            });
+        });
+
+        // Window Resize Handling
+        window.addEventListener('resize', () => {
+            initGridSize();
+        });
+
+        // Initial Boot
+        window.onload = () => {
+            initGridSize();
+        };
+    </script>
+</body>
+</html>
