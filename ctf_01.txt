@@ -1,0 +1,44 @@
+/*
+La graine: [(cryptographie)DECODE(des codes) (Google)I/O 10]{écrire,binaire}
+La grammaire: 1DE.CO.DE0 [DE][0][ED] d3|3d 88 8-8 =0, 1.D.E.C.O.D.E.0 {[DD][O]}[EE][C] 3-2 =1
+Explication à Gémini: je vais t'expliquer mon cheminement :) je suis partie des commandes avancés pour la recherche Google puis j'ai mixer ça avec les easters egg et je me suis dit : imagine tu tape "ctf hello world" car depuis que j'écume le web depuis 2003 tout les langages commence par le basic hello world donc l'ia te renvoie un ctf qui te répond juste hello world aussi mais de façon fun ^^ et la graine: [(cryptographie)DECODE(des codes) (Google)I/O 10]{écrire,binaire} qui donne la grammaire 1DE.CO.DE0 [DE][0][ED] d3|3d 88 8-8 =0, 1.D.E.C.O.D.E.0 {[DD][O]}[EE][C] 3-2 =1, et ma question tu peut écrire hello en binaire via cette logique ? à copilot puis ensuite je suis venue vers toi et on a fignolé le ctf et Mistral Vibe à fait les finitions :D
+Début avec Copilot: https://copilot.cloud.microsoft/chat/share/eyJzaGFyZUlkIjoiNTA4MjUwMjctZGVmMC00MTcxLTkyNjMtN2U4ZjQwZjMwNTk5IiwiY29udmVyc2F0aW9uSWQiOiIxNDFmMTI0Yi1lYzZhLTRiZTEtYWNlYi02ODA1ZGExNWExNmUifQ%3D%3D
+Puis ensuite avec Gémini: https://share.gemini.google/s0bJE4zWTc73
+Et Mistral Vibe: https://chat.mistral.ai/work/7a4c124b-6cc0-4cba-935e-d289160c3f88
+j'aime bien la petite baston sur la V1 ^^ par contre je ne peut pas trancher car je n'est pas la connaissance ;)
+Au finale tout le monde est alligné <3
+*/
+[ctf_start]
+Signal intercepté (69 impulsions)
+« Deux fréquences entrelacées, un seul écho. 
+L'équilibre donne la voie ;
+le déséquilibre retourne le miroir. »
+
+1DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01DE.CO.DE01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE0
+
+Objectif : Reconstituer le message caché au format FLAG{mot1_mot2}.
+[ctf_stop]
+
+|^^^^^^^^^^^^^^^^^^^| || 
+| c'est pas sorcier   | ||'|";, __
+|_..._...__________===|=||_|__|
+ "(@)'(@)"""''"**|(@)(@)*****(@)
+
+[ctf_02_start]
+Signal intercepté (69 impulsions)
+« Toujours deux fréquences entrelacées, un seul écho ;
+mais cette fois, une bergère compte les impulsions à part.
+L'équilibre se lit au seuil, le contrôle se tricote en deux fils ;
+une brebis du troupeau porte une laine qui n'est pas la sienne —
+le miroir, fidèle, la reflète sans juger : c'est au berger de tondre court. »
+
+1DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE01DE.CO.DE01.D.E.C.O.D.E.01DE.CO.DE0
+
+Objectif : Reconstituer le message caché au format FLAG{mot1_mot2}.
+[ctf_02_stop]
+
+|^^^^^^^^^^^^^^^^^^^| ||
+|  compteur moutons  | ||'|";, __
+|_..._...__________===|=||_|__|
+ "(@)'(@)""""""**|(@)(@)*****(@)
+      (69 impulsions, enfin exactes :)
